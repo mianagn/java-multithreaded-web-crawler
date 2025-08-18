@@ -104,7 +104,7 @@ public class CrawlerGUI extends JFrame {
         urlLabel.setForeground(new Color(52, 73, 94));
         urlPanel.add(urlLabel, BorderLayout.WEST);
         
-        urlField = new JTextField("https://example.com");
+        urlField = new JTextField("https://promotelio.gr");
         urlField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         urlField.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(189, 195, 199), 1),
