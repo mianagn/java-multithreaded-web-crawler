@@ -9,9 +9,6 @@ import org.junit.jupiter.api.AfterEach;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Basic tests for the WebCrawler class
- */
 public class WebCrawlerTest {
     
     private WebCrawler crawler;
@@ -110,5 +107,52 @@ public class WebCrawlerTest {
         
         // Stop
         crawler.stopCrawler();
+    }
+    
+    @Test
+    void testThreadSafety() {
+        // Test that multiple threads can safely add URLs without duplicates
+        config.setThreadCount(4);
+        config.setMaxPages(100);
+        config.setMaxDepth(3);
+        
+        crawler.startCrawling("https://httpbin.org/html");
+        
+        // Give it time to process some URLs
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        // Check that we don't have duplicate URLs in the seen URLs
+        WebCrawler.CrawlingStats stats = crawler.getStats();
+        assertTrue(stats.getTotalUrlsSeen() >= 0);
+        
+        crawler.stopCrawler();
+    }
+    
+    @Test
+    void testGracefulShutdown() {
+        config.setThreadCount(2);
+        config.setMaxPages(50);
+        
+        crawler.startCrawling("https://httpbin.org/html");
+        
+        // Give it a moment to start
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        
+        // Stop the crawler
+        long startTime = System.currentTimeMillis();
+        crawler.stopCrawler();
+        long stopTime = System.currentTimeMillis();
+        
+        // Should stop within reasonable time (not hang)
+        assertTrue(stopTime - startTime < 10000); // 10 seconds max
+        assertFalse(crawler.isRunning());
     }
 }

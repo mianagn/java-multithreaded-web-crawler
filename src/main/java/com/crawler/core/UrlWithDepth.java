@@ -1,8 +1,5 @@
 package com.crawler.core;
 
-/**
- * Wrapper class to track URL with its depth level
- */
 public class UrlWithDepth {
     private final String url;
     private final int depth;

@@ -9,17 +9,15 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ThreadPoolExecutor;
 
-/**
- * Main web crawler class that manages multiple worker threads
- */
 public class WebCrawler {
     private static final Logger logger = LoggerFactory.getLogger(WebCrawler.class);
     
     private final CrawlerConfig config;
     private final BlockingQueue<UrlWithDepth> urlQueue;
     private final ConcurrentHashMap<String, CrawledPage> crawledPages;
-    private final ConcurrentHashMap<String, Boolean> seenUrls; // Track all URLs we've seen
+    private final ConcurrentHashMap<String, Boolean> seenUrls;
     private final ExecutorService executorService;
     private final AtomicInteger pagesCrawled;
     private final AtomicInteger currentDepth;
@@ -31,15 +29,12 @@ public class WebCrawler {
         this.config = config;
         this.urlQueue = new LinkedBlockingQueue<>();
         this.crawledPages = new ConcurrentHashMap<>();
-        this.seenUrls = new ConcurrentHashMap<>(); // Track all URLs we've seen (queued or crawled)
+        this.seenUrls = new ConcurrentHashMap<>();
         this.executorService = Executors.newFixedThreadPool(config.getThreadCount());
         this.pagesCrawled = new AtomicInteger(0);
         this.currentDepth = new AtomicInteger(0);
     }
 
-    /**
-     * Start crawling from the given URL
-     */
     public void startCrawling(String startUrl) {
         if (isRunning) {
             logger.warn("Crawler is already running");
@@ -52,17 +47,16 @@ public class WebCrawler {
         isRunning = true;
         isPaused = false;
         
-        // Reset counters
         pagesCrawled.set(0);
         currentDepth.set(0);
         crawledPages.clear();
         seenUrls.clear();
         urlQueue.clear();
         
-        // Add the starting URL with depth 0
+        updateCurrentDepth(0);
+        
         addUrlToQueue(startUrl, 0);
         
-        // Create and start worker threads
         for (int i = 0; i < config.getThreadCount(); i++) {
             CrawlerWorker worker = new CrawlerWorker(
                 urlQueue, crawledPages, seenUrls, config, pagesCrawled, startUrl
@@ -70,57 +64,46 @@ public class WebCrawler {
             executorService.submit(worker);
         }
         
-        // Start monitoring thread
         startMonitoringThread();
     }
 
-    /**
-     * Add a URL to the queue if it hasn't been seen before
-     */
     public boolean addUrlToQueue(String url, int depth) {
         if (url == null || url.trim().isEmpty()) {
             return false;
         }
         
-        // Normalize the URL to handle common variations
         String normalizedUrl = normalizeUrl(url);
         if (normalizedUrl == null) {
             return false;
         }
         
-        // Enforce queue size limit
-        if (urlQueue.size() >= config.getMaxQueueSize()) {
-            logger.info("Queue size limit reached ({}), skipping {}", config.getMaxQueueSize(), normalizedUrl);
-            return false;
-        }
-
-        // Check if we've already seen this URL
-        if (seenUrls.containsKey(normalizedUrl)) {
+        Boolean wasSeen = seenUrls.putIfAbsent(normalizedUrl, false);
+        if (wasSeen != null) {
             logger.debug("URL already seen, skipping: {}", normalizedUrl);
             return false;
         }
         
-        // Check if we've reached the maximum number of pages
         if (pagesCrawled.get() >= config.getMaxPages()) {
             logger.info("Max pages reached ({}), skipping {}", config.getMaxPages(), normalizedUrl);
+            seenUrls.remove(normalizedUrl);
             return false;
         }
         
-        // Mark this URL as seen and add to queue
-        seenUrls.put(normalizedUrl, false); // false means "queued but not yet crawled"
+        if (urlQueue.size() >= config.getMaxQueueSize()) {
+            logger.info("Queue size limit reached ({}), skipping {}", config.getMaxQueueSize(), normalizedUrl);
+            seenUrls.remove(normalizedUrl);
+            return false;
+        }
+        
         urlQueue.offer(new UrlWithDepth(normalizedUrl, depth));
         logger.debug("Added URL to queue: {} (depth: {}, queue size: {})", 
                     normalizedUrl, depth, urlQueue.size());
         return true;
     }
 
-    /**
-     * Normalize URL to handle common variations and remove fragments
-     */
     private String normalizeUrl(String url) {
         try {
             URL urlObj = new URL(url);
-            // Remove fragments (#) and normalize
             String normalized = urlObj.getProtocol() + "://" + urlObj.getHost();
             if (urlObj.getPort() != -1) {
                 normalized += ":" + urlObj.getPort();
@@ -136,64 +119,52 @@ public class WebCrawler {
         }
     }
 
-    /**
-     * Mark a URL as crawled
-     */
     public void markUrlAsCrawled(String url) {
         if (url != null) {
             String normalizedUrl = normalizeUrl(url);
             if (normalizedUrl != null) {
-                seenUrls.put(normalizedUrl, true); // true means "crawled"
+                seenUrls.replace(normalizedUrl, false, true);
             }
         }
     }
 
-    /**
-     * Stop the crawler
-     */
     public void stopCrawler() {
         logger.info("Stopping web crawler");
         isRunning = false;
         isPaused = false;
         
-        // Shutdown executor service
+        urlQueue.clear();
+        
         executorService.shutdown();
         try {
-            if (!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
+            if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+                logger.info("Forcing shutdown of executor service");
                 executorService.shutdownNow();
+                if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+                    logger.error("Executor service did not terminate");
+                }
             }
         } catch (InterruptedException e) {
+            logger.warn("Interrupted while waiting for executor shutdown");
             executorService.shutdownNow();
             Thread.currentThread().interrupt();
         }
     }
 
-    /**
-     * Pause the crawler
-     */
     public void pauseCrawler() {
         logger.info("Pausing web crawler");
         isPaused = true;
     }
 
-    /**
-     * Resume the crawler
-     */
     public void resumeCrawler() {
         logger.info("Resuming web crawler");
         isPaused = false;
     }
 
-    /**
-     * Get all crawled pages
-     */
     public Collection<CrawledPage> getCrawledPages() {
         return crawledPages.values();
     }
 
-    /**
-     * Get crawling statistics
-     */
     public CrawlingStats getStats() {
         return new CrawlingStats(
             pagesCrawled.get(),
@@ -205,37 +176,30 @@ public class WebCrawler {
         );
     }
 
-    /**
-     * Check if crawler is running
-     */
     public boolean isRunning() {
         return isRunning;
     }
 
-    /**
-     * Check if crawler is paused
-     */
     public boolean isPaused() {
         return isPaused;
     }
 
     private void startMonitoringThread() {
         Thread monitorThread = new Thread(() -> {
+            int cleanupCounter = 0;
             while (isRunning && !Thread.currentThread().isInterrupted()) {
                 try {
-                    Thread.sleep(1000); // Check every second
+                    Thread.sleep(1000);
+                    cleanupCounter++;
                     
                     if (!isPaused) {
-                        // Check if we've reached the maximum pages
                         if (pagesCrawled.get() >= config.getMaxPages()) {
                             logger.info("Reached maximum pages limit: {}", config.getMaxPages());
                             stopCrawler();
                             break;
                         }
                         
-                        // Check if queue is empty and all workers are done
                         if (urlQueue.isEmpty() && pagesCrawled.get() > 0) {
-                            // Give workers a moment to process any URLs that might be in flight
                             Thread.sleep(3000);
                             
                             if (urlQueue.isEmpty()) {
@@ -246,6 +210,11 @@ public class WebCrawler {
                             }
                         }
                     }
+                    
+                    if (cleanupCounter >= 30) {
+                        cleanupRetryCounts();
+                        cleanupCounter = 0;
+                    }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;
@@ -255,10 +224,40 @@ public class WebCrawler {
         monitorThread.setDaemon(true);
         monitorThread.start();
     }
+    
+    private void cleanupRetryCounts() {
+        try {
+            if (executorService instanceof ThreadPoolExecutor) {
+                ThreadPoolExecutor tpe = (ThreadPoolExecutor) executorService;
+                if (tpe.getActiveCount() > 0) {
+                    logger.debug("Skipping retry count cleanup - workers are active");
+                    return;
+                }
+            }
+            
+            int beforeSize = seenUrls.size();
+            seenUrls.entrySet().removeIf(entry -> {
+                return entry.getValue() && !urlQueue.stream()
+                    .anyMatch(urlWithDepth -> urlWithDepth.getUrl().equals(entry.getKey()));
+            });
+            int afterSize = seenUrls.size();
+            
+            if (beforeSize != afterSize) {
+                logger.debug("Cleaned up {} seen URLs, map size: {} -> {}", 
+                           beforeSize - afterSize, beforeSize, afterSize);
+            }
+        } catch (Exception e) {
+            logger.warn("Error during cleanup: {}", e.getMessage());
+        }
+    }
+    
+    private void updateCurrentDepth(int newDepth) {
+        int current = currentDepth.get();
+        while (newDepth > current && !currentDepth.compareAndSet(current, newDepth)) {
+            current = currentDepth.get();
+        }
+    }
 
-    /**
-     * Statistics class for the crawler
-     */
     public static class CrawlingStats {
         private final int pagesCrawled;
         private final int currentDepth;
@@ -277,7 +276,6 @@ public class WebCrawler {
             this.isPaused = isPaused;
         }
 
-        // Getters
         public int getPagesCrawled() { return pagesCrawled; }
         public int getCurrentDepth() { return currentDepth; }
         public int getQueueSize() { return queueSize; }

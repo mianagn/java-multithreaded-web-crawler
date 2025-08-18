@@ -13,10 +13,6 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
-/**
- * Robots.txt parser and checker for web crawlers
- * Implements RFC 9309 (Robots Exclusion Protocol)
- */
 public class RobotsTxtParser {
     private static final Logger logger = LoggerFactory.getLogger(RobotsTxtParser.class);
     

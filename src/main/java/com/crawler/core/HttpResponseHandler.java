@@ -8,9 +8,6 @@ import java.net.URL;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Handles HTTP responses, status codes, and retry logic
- */
 public class HttpResponseHandler {
     private static final Logger logger = LoggerFactory.getLogger(HttpResponseHandler.class);
     
@@ -190,6 +187,22 @@ public class HttpResponseHandler {
     public int getRetryCount(String url) {
         AtomicInteger retryCount = retryCounts.get(url);
         return retryCount != null ? retryCount.get() : 0;
+    }
+    
+    /**
+     * Clean up retry counts for URLs that have exceeded max retries
+     * This prevents memory leaks in the retry counts map
+     */
+    public void cleanupRetryCounts() {
+        retryCounts.entrySet().removeIf(entry -> 
+            entry.getValue().get() >= maxRetries);
+    }
+    
+    /**
+     * Get the size of the retry counts map for monitoring
+     */
+    public int getRetryCountsSize() {
+        return retryCounts.size();
     }
     
     /**

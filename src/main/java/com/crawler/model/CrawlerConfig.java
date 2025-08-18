@@ -3,9 +3,6 @@ package com.crawler.model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Configuration class for the web crawler
- */
 public class CrawlerConfig {
     private static final Logger logger = LoggerFactory.getLogger(CrawlerConfig.class);
     private int threadCount;
@@ -28,25 +25,22 @@ public class CrawlerConfig {
     private int robotsTxtTimeout;
 
     public CrawlerConfig() {
-        // Default values
-        this.threadCount = 10;        // Optimized for M4 MacBook Pro (8 cores + I/O bound nature)
+        this.threadCount = 10;
         this.maxDepth = 3;
         this.maxPages = 100;
-        this.delayBetweenRequests = 500; // Reduced to 500ms for better performance on fast sites
-        this.connectionTimeout = 10000; // 10 seconds
+        this.delayBetweenRequests = 500;
+        this.connectionTimeout = 10000;
         this.userAgent = "Java-Multithreaded-WebCrawler/1.0";
         this.followRedirects = true;
         this.respectRobotsTxt = true;
-        // Defaults for tuning options
-        this.maxQueueSize = 500;       // Prevent unbounded memory growth
-        this.filterNonContent = true;  // Re-enabled now that depth tracking is fixed
-        this.maxLinksPerPage = 50;     // Limit links processed per page
-        // Defaults for advanced features
-        this.maxRetries = 3;           // Retry failed requests up to 3 times
-        this.retryBaseDelay = 1000;   // Base delay for exponential backoff (1 second)
-        this.maxRedirects = 5;         // Maximum redirects to prevent loops
-        this.validateContentType = true; // Validate content type before crawling
-        this.robotsTxtTimeout = 10000; // 10 second timeout for robots.txt
+        this.maxQueueSize = 500;
+        this.filterNonContent = true;
+        this.maxLinksPerPage = 50;
+        this.maxRetries = 3;
+        this.retryBaseDelay = 1000;
+        this.maxRedirects = 5;
+        this.validateContentType = true;
+        this.robotsTxtTimeout = 10000;
     }
 
     // Getters and Setters
@@ -56,8 +50,8 @@ public class CrawlerConfig {
 
     public void setThreadCount(int threadCount) {
         int availableProcessors = Runtime.getRuntime().availableProcessors();
-        int maxThreads = Math.min(availableProcessors * 2, 32); // Cap at 2x cores or 32, whichever is lower
-        int minThreads = Math.max(1, availableProcessors / 2);  // Minimum of 1 or half cores
+        int maxThreads = Math.min(availableProcessors * 2, 32);
+        int minThreads = Math.max(1, availableProcessors / 2);
         
         if (threadCount < minThreads || threadCount > maxThreads) {
             logger.warn("Thread count {} is outside recommended range [{}-{}] for {} available processors. " +
@@ -130,7 +124,7 @@ public class CrawlerConfig {
     }
 
     public void setMaxQueueSize(int maxQueueSize) {
-        this.maxQueueSize = Math.max(50, maxQueueSize); // enforce reasonable minimum
+        this.maxQueueSize = Math.max(50, maxQueueSize);
     }
 
     public boolean isFilterNonContent() {

@@ -7,28 +7,22 @@ import org.slf4j.LoggerFactory;
 import javax.swing.*;
 import java.awt.*;
 
-/**
- * Main class for the Java Multithreaded Web Crawler application
- */
 public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) {
-        // Set up logging
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "INFO");
         System.setProperty("org.slf4j.simpleLogger.showDateTime", "true");
         System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", "HH:mm:ss");
         
         logger.info("Starting Java Multithreaded Web Crawler Application");
         
-        // Set system look and feel
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             logger.warn("Could not set system look and feel: {}", e.getMessage());
         }
         
-        // Launch GUI on EDT
         SwingUtilities.invokeLater(() -> {
             try {
                 CrawlerGUI gui = new CrawlerGUI();
@@ -44,7 +38,6 @@ public class Main {
             }
         });
         
-        // Add shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             logger.info("Application shutting down");
         }));

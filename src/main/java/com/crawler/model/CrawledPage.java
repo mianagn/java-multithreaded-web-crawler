@@ -2,11 +2,9 @@ package com.crawler.model;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.time.LocalDateTime;
 
-/**
- * Represents a crawled web page with its metadata and content
- */
 public class CrawledPage {
     private String url;
     private String title;
@@ -18,7 +16,7 @@ public class CrawledPage {
 
     public CrawledPage(String url) {
         this.url = url;
-        this.links = new ArrayList<>();
+        this.links = Collections.synchronizedList(new ArrayList<>());
         this.crawlTime = LocalDateTime.now();
     }
 
