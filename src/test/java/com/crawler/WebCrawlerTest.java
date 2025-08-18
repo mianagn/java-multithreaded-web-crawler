@@ -128,7 +128,6 @@ public class WebCrawlerTest {
         // Check that we don't have duplicate URLs in the seen URLs
         WebCrawler.CrawlingStats stats = crawler.getStats();
         assertTrue(stats.getTotalUrlsSeen() >= 0);
-        
         crawler.stopCrawler();
     }
     
