@@ -36,10 +36,7 @@ java -jar target/java-multithreaded-web-crawler-1.0.0.jar
 ```
 
 ### Option 3: Run Main Class Directly
-```bash
-mvn clean compile
-java -cp target/classes com.crawler.Main
-```
+
 
 ## Multithreading and Concurrency
 
