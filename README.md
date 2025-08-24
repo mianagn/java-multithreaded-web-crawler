@@ -29,13 +29,7 @@ mvn clean compile
 mvn exec:java -Dexec.mainClass="com.crawler.Main"
 ```
 
-### Option 2: Build and Run JAR
-```bash
-mvn clean package
-java -jar target/java-multithreaded-web-crawler-1.0.0.jar
-```
-
-### Option 3: Run Main Class Directly
+### Option 2: Run Main Class Directly
 
 
 ## Multithreading and Concurrency
