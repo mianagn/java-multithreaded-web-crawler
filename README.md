@@ -10,7 +10,7 @@ A multithreaded web crawler built in Java with Swing GUI, demonstrating concurre
 
 ### Setup
 ```bash
-git clone <https://github.com/mianagn/java-multithreaded-web-crawlerl>
+git clone https://github.com/mianagn/java-multithreaded-web-crawler
 cd java-multithreaded-web-crawler
 ```
 

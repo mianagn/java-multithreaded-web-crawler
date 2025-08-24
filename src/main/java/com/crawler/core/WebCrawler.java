@@ -19,7 +19,7 @@ public class WebCrawler {
     private final BlockingQueue<UrlWithDepth> urlQueue;
     private final ConcurrentHashMap<String, CrawledPage> crawledPages;
     private final ConcurrentHashMap<String, Boolean> seenUrls;
-    private final ExecutorService executorService;
+    private ExecutorService executorService;
     private final AtomicInteger pagesCrawled;
     private final AtomicInteger currentDepth;
     
@@ -40,6 +40,12 @@ public class WebCrawler {
         if (isRunning) {
             logger.warn("Crawler is already running");
             return;
+        }
+
+        // Check if executor service is terminated and recreate if necessary
+        if (executorService.isTerminated() || executorService.isShutdown()) {
+            logger.info("Previous crawling session completed. Recreating executor service for new session.");
+            recreateExecutorService();
         }
 
         logger.info("Starting web crawler with {} threads", config.getThreadCount());
@@ -129,6 +135,23 @@ public class WebCrawler {
         }
     }
 
+    private void recreateExecutorService() {
+        // Create a new executor service with the current thread count
+        // This allows the crawler to be reused for multiple sessions
+        if (executorService != null && !executorService.isTerminated()) {
+            executorService.shutdownNow();
+            try {
+                executorService.awaitTermination(1, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        
+        // Create new executor service
+        this.executorService = Executors.newFixedThreadPool(config.getThreadCount());
+        logger.info("Created new executor service with {} threads", config.getThreadCount());
+    }
+
     public void stopCrawler() {
         logger.info("Stopping web crawler");
         isRunning = false;
@@ -183,6 +206,32 @@ public class WebCrawler {
 
     public boolean isPaused() {
         return isPaused;
+    }
+
+    public boolean canStart() {
+        // Can start if not currently running AND either:
+        // 1. Executor service is null (first time)
+        // 2. Executor service is terminated/shutdown (previous session completed)
+        // 3. Executor service is running but no active tasks (ready for new session)
+        if (isRunning) {
+            return false;
+        }
+        
+        if (executorService == null) {
+            return true;
+        }
+        
+        if (executorService.isTerminated() || executorService.isShutdown()) {
+            return true;
+        }
+        
+        // If executor service is running but no active tasks, we can start
+        if (executorService instanceof ThreadPoolExecutor) {
+            ThreadPoolExecutor tpe = (ThreadPoolExecutor) executorService;
+            return tpe.getActiveCount() == 0;
+        }
+        
+        return true;
     }
 
     private void startMonitoringThread() {

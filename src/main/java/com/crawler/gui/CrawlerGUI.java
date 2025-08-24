@@ -119,6 +119,9 @@ public class CrawlerGUI extends JFrame {
         buttonPanel.add(pauseButton);
         buttonPanel.add(resumeButton);
         
+        // Set initial button states
+        updateButtonStates();
+        
         JPanel configPanel = createConfigPanel();
         
         panel.add(urlPanel, BorderLayout.NORTH);
@@ -321,8 +324,9 @@ public class CrawlerGUI extends JFrame {
     private void updateButtonStates() {
         boolean isRunning = crawler.isRunning();
         boolean isPaused = crawler.isPaused();
+        boolean canStart = crawler.canStart();
         
-        startButton.setEnabled(!isRunning);
+        startButton.setEnabled(canStart);
         stopButton.setEnabled(isRunning);
         pauseButton.setEnabled(isRunning && !isPaused);
         resumeButton.setEnabled(isRunning && isPaused);
