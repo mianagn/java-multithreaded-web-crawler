@@ -1,73 +1,84 @@
 # Java Multithreaded Web Crawler
 
-A multithreaded web crawler built in Java with Swing GUI.
+A multithreaded web crawler built in Java with Swing GUI, demonstrating concurrent programming concepts.
 
-## Features
-
-- **Multithreaded**: Configurable thread pool for concurrent crawling
-- **Depth Control**: Limit crawling depth to prevent infinite loops
-- **Page Limits**: Set maximum number of pages to crawl
-- **Domain Restriction**: Crawl only within the same domain
-- **Robots.txt**: Respects robots.txt files and crawl delays
-- **GUI Interface**: Swing-based user interface for easy control
-
-## Quick Start
+## Installation
 
 ### Prerequisites
-- Java 11+
+- Java 21
 - Maven 3.6+
 
-### Build & Run
+### Setup
 ```bash
-# Build
-mvn clean compile
+git clone <https://github.com/mianagn/java-multithreaded-web-crawlerl>
+cd java-multithreaded-web-crawler
+```
 
-# Run
+## Dependencies
+
+The project uses the following dependencies:
+- **JSoup**: HTML parsing and DOM manipulation
+- **SLF4J**: Logging framework
+
+
+## Running the Application
+
+### Option 1: Maven Execution
+```bash
+mvn clean compile
 mvn exec:java -Dexec.mainClass="com.crawler.Main"
 ```
 
-### Build JAR
+### Option 2: Build and Run JAR
 ```bash
 mvn clean package
 java -jar target/java-multithreaded-web-crawler-1.0.0.jar
 ```
 
-## Configuration
-
-Default settings:
-- **Threads**: 10 (auto-optimized)
-- **Max Depth**: 3
-- **Max Pages**: 100
-- **Delay**: 500ms between requests
-- **Timeout**: 10 seconds
-
-All settings can be adjusted through the GUI.
-
-## Usage
-
-1. Launch the application
-2. Enter a starting URL (e.g., `https://example.com`)
-3. Configure settings if needed
-4. Click "Start Crawling"
-5. Monitor progress in real-time
-6. Use Pause/Resume/Stop controls as needed
-
-## Architecture
-
-- **WebCrawler**: Main coordinator managing worker threads
-- **CrawlerWorker**: Individual threads for crawling URLs
-- **RobotsTxtParser**: Handles robots.txt compliance
-- **HttpResponseHandler**: Manages HTTP responses and retries
-- **CrawlerGUI**: Swing-based user interface
-
-## Testing
-
+### Option 3: Run Main Class Directly
 ```bash
-mvn test
+mvn clean compile
+java -cp target/classes com.crawler.Main
 ```
 
-## Dependencies
+## Multithreading and Concurrency
 
-- JSoup (HTML parsing)
-- SLF4J (logging)
-- JUnit 5 (testing)
+### Thread Pool Architecture
+The crawler implements a **thread pool pattern** where multiple worker threads concurrently process URLs from a shared queue. This design allows for efficient resource utilization and prevents thread creation overhead.
+
+**Location**: `WebCrawler.java` - Main coordinator class
+- Creates a fixed thread pool using `ExecutorService`
+- Manages worker thread lifecycle and coordination
+- Implements thread-safe URL distribution
+
+### Concurrent Data Structures
+**Location**: `CrawlerWorker.java` and `WebCrawler.java`
+- **`ConcurrentHashMap<String, CrawledPage>`**: Thread-safe storage of crawled pages
+- **`ConcurrentHashMap<String, Boolean>`**: Thread-safe tracking of seen URLs
+- **`BlockingQueue<UrlWithDepth>`**: Thread-safe queue for URL distribution
+
+### Worker Thread Implementation
+**Location**: `CrawlerWorker.java`
+- Each worker thread runs independently, polling URLs from the shared queue
+- Implements `Runnable` interface for concurrent execution
+- Uses `Thread.sleep()` and `BlockingQueue.poll()` for efficient waiting
+- Thread-safe access to shared data structures
+
+### Synchronization Mechanisms
+**Location**: Throughout the codebase
+- **AtomicInteger**: Thread-safe counters for pages crawled and current depth
+- **ScheduledExecutorService**: Background thread for GUI updates
+- **SwingUtilities.invokeLater()**: Thread-safe GUI updates from worker threads
+
+### Why This Design?
+1. **Scalability**: Multiple threads can crawl different URLs simultaneously
+2. **Efficiency**: Prevents blocking on network I/O operations
+3. **Resource Management**: Controlled thread pool prevents resource exhaustion
+4. **Responsiveness**: GUI remains responsive while crawling occurs in background
+5. **Domain Isolation**: Each thread processes URLs independently, reducing contention
+
+### Concurrency Challenges Addressed
+- **Race Conditions**: Prevented through thread-safe data structures
+- **Deadlocks**: Avoided by using non-blocking operations and timeouts
+- **Memory Consistency**: Ensured through proper synchronization and volatile variables
+- **Thread Coordination**: Managed through shared queues and atomic operations

@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
@@ -58,8 +59,8 @@ public class RobotsTxtParser {
      * Get the robots.txt URL for a given page URL
      */
     private String getRobotsTxtUrl(String pageUrl) throws Exception {
-        URL url = new URL(pageUrl);
-        return url.getProtocol() + "://" + url.getHost() + "/robots.txt";
+        URI uri = new URI(pageUrl);
+        return uri.getScheme() + "://" + uri.getHost() + "/robots.txt";
     }
     
     /**
@@ -82,7 +83,7 @@ public class RobotsTxtParser {
     private RobotsTxtRules fetchAndParseRobotsTxt(String robotsUrl) throws IOException {
         RobotsTxtRules rules = new RobotsTxtRules();
         
-        URL url = new URL(robotsUrl);
+        URL url = URI.create(robotsUrl).toURL();
         URLConnection connection = url.openConnection();
         connection.setConnectTimeout(timeout);
         connection.setReadTimeout(timeout);
@@ -254,7 +255,7 @@ public class RobotsTxtParser {
             
             private String extractPath(String url) {
                 try {
-                    URL urlObj = new URL(url);
+                    URL urlObj = URI.create(url).toURL();
                     return urlObj.getPath();
                 } catch (Exception e) {
                     return url;

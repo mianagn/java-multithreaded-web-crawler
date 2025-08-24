@@ -5,6 +5,7 @@ import com.crawler.model.CrawlerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.net.URL;
 import java.util.Collection;
 import java.util.concurrent.*;
@@ -103,7 +104,7 @@ public class WebCrawler {
 
     private String normalizeUrl(String url) {
         try {
-            URL urlObj = new URL(url);
+            URL urlObj = URI.create(url).toURL();
             String normalized = urlObj.getProtocol() + "://" + urlObj.getHost();
             if (urlObj.getPort() != -1) {
                 normalized += ":" + urlObj.getPort();

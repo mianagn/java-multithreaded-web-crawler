@@ -20,7 +20,6 @@ public class CrawledPage {
         this.crawlTime = LocalDateTime.now();
     }
 
-    // Getters and Setters
     public String getUrl() {
         return url;
     }

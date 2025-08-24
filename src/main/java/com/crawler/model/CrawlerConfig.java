@@ -13,11 +13,9 @@ public class CrawlerConfig {
     private String userAgent;
     private boolean followRedirects;
     private boolean respectRobotsTxt;
-    // New tuning options
     private int maxQueueSize;
     private boolean filterNonContent;
     private int maxLinksPerPage;
-    // Advanced features
     private int maxRetries;
     private int retryBaseDelay;
     private int maxRedirects;
@@ -43,7 +41,6 @@ public class CrawlerConfig {
         this.robotsTxtTimeout = 10000;
     }
 
-    // Getters and Setters
     public int getThreadCount() {
         return threadCount;
     }
@@ -118,7 +115,6 @@ public class CrawlerConfig {
         this.respectRobotsTxt = respectRobotsTxt;
     }
 
-    // New getters/setters
     public int getMaxQueueSize() {
         return maxQueueSize;
     }
@@ -143,7 +139,6 @@ public class CrawlerConfig {
         this.maxLinksPerPage = Math.max(1, maxLinksPerPage);
     }
 
-    // Advanced feature getters and setters
     public int getMaxRetries() {
         return maxRetries;
     }

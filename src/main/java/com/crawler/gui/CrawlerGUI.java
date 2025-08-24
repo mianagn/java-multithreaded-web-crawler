@@ -8,8 +8,6 @@ import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.Collection;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -47,35 +45,27 @@ public class CrawlerGUI extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 800);
         setLocationRelativeTo(null);
-        
-        // Set modern look and feel but ensure custom styling works
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             
-            // Override button UI defaults to ensure our custom styling works
             UIManager.put("Button.background", new Color(46, 204, 113));
             UIManager.put("Button.foreground", Color.WHITE);
             UIManager.put("Button.focus", false);
             UIManager.put("Button.select", new Color(46, 204, 113));
             
         } catch (Exception e) {
-            // Fallback to default
         }
         
-        // Main panel with BorderLayout
         JPanel mainPanel = new JPanel(new BorderLayout(15, 15));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         mainPanel.setBackground(new Color(248, 249, 250));
         
-        // Top panel for URL input and controls
         JPanel topPanel = createTopPanel();
         mainPanel.add(topPanel, BorderLayout.NORTH);
         
-        // Center panel for results table
         JPanel centerPanel = createCenterPanel();
         mainPanel.add(centerPanel, BorderLayout.CENTER);
         
-        // Bottom panel for logs and status
         JPanel bottomPanel = createBottomPanel();
         mainPanel.add(bottomPanel, BorderLayout.SOUTH);
         
@@ -112,7 +102,6 @@ public class CrawlerGUI extends JFrame {
         ));
         urlPanel.add(urlField, BorderLayout.CENTER);
         
-        // Control buttons panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 8));
         buttonPanel.setOpaque(true);
         buttonPanel.setBackground(new Color(200, 200, 200));
@@ -130,7 +119,6 @@ public class CrawlerGUI extends JFrame {
         buttonPanel.add(pauseButton);
         buttonPanel.add(resumeButton);
         
-        // Configuration panel
         JPanel configPanel = createConfigPanel();
         
         panel.add(urlPanel, BorderLayout.NORTH);
@@ -165,7 +153,6 @@ public class CrawlerGUI extends JFrame {
         threadSpinner.addChangeListener(e -> config.setThreadCount((Integer) threadSpinner.getValue()));
         panel.add(threadSpinner);
         
-        // Max pages
         JLabel maxPagesLabel = new JLabel("Max Pages:");
         maxPagesLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
         maxPagesLabel.setForeground(new Color(52, 73, 94));
@@ -175,7 +162,6 @@ public class CrawlerGUI extends JFrame {
         maxPagesSpinner.addChangeListener(e -> config.setMaxPages((Integer) maxPagesSpinner.getValue()));
         panel.add(maxPagesSpinner);
         
-        // Max depth
         JLabel depthLabel = new JLabel("Max Depth:");
         depthLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
         depthLabel.setForeground(new Color(52, 73, 94));
@@ -185,7 +171,6 @@ public class CrawlerGUI extends JFrame {
         depthSpinner.addChangeListener(e -> config.setMaxDepth((Integer) depthSpinner.getValue()));
         panel.add(depthSpinner);
         
-        // Delay
         JLabel delayLabel = new JLabel("Delay (ms):");
         delayLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
         delayLabel.setForeground(new Color(52, 73, 94));
@@ -213,7 +198,6 @@ public class CrawlerGUI extends JFrame {
         ));
         panel.setBackground(Color.WHITE);
         
-        // Create table
         String[] columnNames = {"URL", "Title", "Status", "Links", "Response Time (ms)", "Crawl Time"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
@@ -230,13 +214,11 @@ public class CrawlerGUI extends JFrame {
         resultsTable.setSelectionBackground(new Color(52, 152, 219));
         resultsTable.setSelectionForeground(Color.WHITE);
         
-        // Style the table header
         resultsTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
         resultsTable.getTableHeader().setBackground(new Color(52, 73, 94));
         resultsTable.getTableHeader().setForeground(Color.WHITE);
         resultsTable.getTableHeader().setBorder(BorderFactory.createLineBorder(new Color(52, 73, 94)));
         
-        // Add scroll pane
         JScrollPane scrollPane = new JScrollPane(resultsTable);
         scrollPane.setBorder(BorderFactory.createLineBorder(new Color(189, 195, 199), 1));
         panel.add(scrollPane, BorderLayout.CENTER);
@@ -259,7 +241,6 @@ public class CrawlerGUI extends JFrame {
         ));
         panel.setBackground(Color.WHITE);
         
-        // Status panel
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 5));
         statusPanel.setBackground(new Color(248, 249, 250));
         statusPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
@@ -276,7 +257,6 @@ public class CrawlerGUI extends JFrame {
         statusPanel.add(new JLabel(" | "));
         statusPanel.add(statsLabel);
         
-        // Log area
         logArea = new JTextArea(8, 80);
         logArea.setEditable(false);
         logArea.setFont(new Font("Consolas", Font.PLAIN, 11));
@@ -299,7 +279,6 @@ public class CrawlerGUI extends JFrame {
         pauseButton.addActionListener(e -> pauseCrawling());
         resumeButton.addActionListener(e -> resumeCrawling());
         
-        // Initial button states
         updateButtonStates();
     }
     
@@ -380,12 +359,10 @@ public class CrawlerGUI extends JFrame {
             statusLabel.setForeground(new Color(231, 76, 60));
         }
         
-        // Update stats label
         statsLabel.setText(String.format("Pages: %d | Depth: %d | Queue: %d | Total URLs: %d", 
             stats.getPagesCrawled(), stats.getCurrentDepth(), stats.getQueueSize(), stats.getTotalUrlsSeen()));
             
-            // Update button states
-            updateButtonStates();
+        updateButtonStates();
         });
     }
     
@@ -393,10 +370,8 @@ public class CrawlerGUI extends JFrame {
         Collection<CrawledPage> pages = crawler.getCrawledPages();
         
         SwingUtilities.invokeLater(() -> {
-            // Clear existing rows
             tableModel.setRowCount(0);
             
-            // Add new rows
             for (CrawledPage page : pages) {
                 Object[] row = {
                     page.getUrl(),
@@ -430,31 +405,22 @@ public class CrawlerGUI extends JFrame {
     private JButton createStyledButton(String text, Color backgroundColor) {
         JButton button = new JButton(text);
         
-        // Force the button to be opaque so background colors show
         button.setOpaque(true);
         button.setContentAreaFilled(true);
         
-        // Set font and colors
         button.setFont(new Font("Segoe UI", Font.BOLD, 12));
         button.setForeground(Color.WHITE);
         button.setBackground(backgroundColor);
         
-        // Create a more visible border
         button.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(backgroundColor.darker(), 2),
             BorderFactory.createEmptyBorder(10, 20, 10, 20)
         ));
         
-        // Disable focus painting and set cursor
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
-        // Ensure styles are applied
         button.revalidate();
-        
-
-        
-
         
         return button;
     }

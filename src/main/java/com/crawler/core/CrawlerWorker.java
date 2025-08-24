@@ -10,12 +10,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import com.crawler.core.RobotsTxtParser;
-import com.crawler.core.HttpResponseHandler;
 import java.util.concurrent.TimeUnit;
 
 public class CrawlerWorker implements Runnable {
@@ -97,8 +96,8 @@ public class CrawlerWorker implements Runnable {
         }
 
         try {
-            URL urlObj = new URL(url);
-            URL baseUrlObj = new URL(baseUrl);
+            URL urlObj = URI.create(url).toURL();
+            URL baseUrlObj = URI.create(baseUrl).toURL();
             return urlObj.getHost().equals(baseUrlObj.getHost());
         } catch (Exception e) {
             logger.warn("Invalid URL format: {}", url);
@@ -112,8 +111,8 @@ public class CrawlerWorker implements Runnable {
         }
 
         try {
-            URL urlObj = new URL(url);
-            URL baseUrlObj = new URL(baseUrl);
+            URL urlObj = URI.create(url).toURL();
+            URL baseUrlObj = URI.create(baseUrl).toURL();
             if (!urlObj.getHost().equals(baseUrlObj.getHost())) {
                 return false;
             }
@@ -187,7 +186,7 @@ public class CrawlerWorker implements Runnable {
 
     private String normalizeUrl(String url) {
         try {
-            URL urlObj = new URL(url);
+            URL urlObj = URI.create(url).toURL();
             String normalized = urlObj.getProtocol() + "://" + urlObj.getHost();
             if (urlObj.getPort() != -1) {
                 normalized += ":" + urlObj.getPort();
