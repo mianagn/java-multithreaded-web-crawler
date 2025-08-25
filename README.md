@@ -30,9 +30,9 @@ run.bat
 ```
 
 These scripts will:
-- ✅ Check if Java 21+ and Maven are installed
-- 🔨 Automatically download all dependencies
-- 🚀 Build and run the application
+- Check if Java 21+ and Maven are installed
+- Automatically download all dependencies
+- Build and run the application
 
 ## Manual Running
 
@@ -45,4 +45,3 @@ mvn exec:java -Dexec.mainClass="com.crawler.Main"
 ```
 
 ### Option 2: Run Main Class Directly
-```
