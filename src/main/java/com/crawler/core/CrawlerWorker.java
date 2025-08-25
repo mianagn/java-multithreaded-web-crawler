@@ -35,6 +35,11 @@ public class CrawlerWorker implements Runnable {
                         CrawlerConfig config,
                         AtomicInteger pagesCrawled,
                         String baseUrl) {
+        if (urlQueue == null || crawledPages == null || seenUrls == null || 
+            config == null || pagesCrawled == null || baseUrl == null) {
+            throw new IllegalArgumentException("All parameters must be non-null");
+        }
+        
         this.urlQueue = urlQueue;
         this.crawledPages = crawledPages;
         this.seenUrls = seenUrls;
@@ -131,7 +136,7 @@ public class CrawlerWorker implements Runnable {
     private boolean isNonContentUrl(String url) {
         String lowerUrl = url.toLowerCase();
 
-        String[] patterns = new String[] {
+        String[] patterns = {
             "/admin/", "/wp-admin/", "/wp-login.php", "/login", "/logout", "/register",
             "/cart/", "/checkout/", "/my-account/", "/account/", "/profile/",
             "/search", "/sitemap", "/robots.txt", "/favicon.ico",
@@ -139,17 +144,19 @@ public class CrawlerWorker implements Runnable {
             "/wp-cron.php", "/wp-content/plugins/", "/wp-content/themes/",
             "/temp/", "/tmp/", "/cache/", "/logs/"
         };
+        
         for (String pattern : patterns) {
             if (lowerUrl.contains(pattern)) {
                 return true;
             }
         }
 
-        String[] extensions = new String[] {
+        String[] extensions = {
             ".css", ".js", ".map", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico",
             ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".zip", ".rar",
             ".mp3", ".wav", ".mp4", ".avi", ".mov", ".wmv"
         };
+        
         for (String ext : extensions) {
             if (lowerUrl.endsWith(ext)) {
                 return true;
@@ -238,7 +245,7 @@ public class CrawlerWorker implements Runnable {
         int redirectCount = 0;
 
         try {
-                        logger.info("Crawling: {} (depth: {})", url, currentDepth);
+            logger.info("Crawling: {} (depth: {})", url, currentDepth);
 
             Document doc = Jsoup.connect(url)
                     .userAgent(config.getUserAgent())

@@ -4,17 +4,22 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 public class CrawledPage {
-    private String url;
+    private final String url;
     private String title;
     private String content;
-    private List<String> links;
-    private LocalDateTime crawlTime;
+    private final List<String> links;
+    private final LocalDateTime crawlTime;
     private int statusCode;
     private long responseTime;
 
     public CrawledPage(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            throw new IllegalArgumentException("URL cannot be null or empty");
+        }
+        
         this.url = url;
         this.links = Collections.synchronizedList(new ArrayList<>());
         this.crawlTime = LocalDateTime.now();
@@ -22,10 +27,6 @@ public class CrawledPage {
 
     public String getUrl() {
         return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
     }
 
     public String getTitle() {
@@ -45,11 +46,7 @@ public class CrawledPage {
     }
 
     public List<String> getLinks() {
-        return links;
-    }
-
-    public void setLinks(List<String> links) {
-        this.links = links;
+        return new ArrayList<>(links);
     }
 
     public void addLink(String link) {
@@ -60,10 +57,6 @@ public class CrawledPage {
 
     public LocalDateTime getCrawlTime() {
         return crawlTime;
-    }
-
-    public void setCrawlTime(LocalDateTime crawlTime) {
-        this.crawlTime = crawlTime;
     }
 
     public int getStatusCode() {
@@ -79,7 +72,23 @@ public class CrawledPage {
     }
 
     public void setResponseTime(long responseTime) {
+        if (responseTime < 0) {
+            throw new IllegalArgumentException("Response time cannot be negative");
+        }
         this.responseTime = responseTime;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CrawledPage that = (CrawledPage) o;
+        return Objects.equals(url, that.url);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(url);
     }
 
     @Override

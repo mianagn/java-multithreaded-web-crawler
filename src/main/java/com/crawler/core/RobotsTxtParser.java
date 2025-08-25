@@ -22,64 +22,63 @@ public class RobotsTxtParser {
     private final int timeout;
     
     public RobotsTxtParser(String userAgent, int timeout) {
+        if (userAgent == null || userAgent.trim().isEmpty()) {
+            throw new IllegalArgumentException("User agent cannot be null or empty");
+        }
+        if (timeout <= 0) {
+            throw new IllegalArgumentException("Timeout must be positive");
+        }
+        
         this.userAgent = userAgent;
         this.timeout = timeout;
     }
     
-    /**
-     * Check if a URL is allowed to be crawled according to robots.txt
-     */
     public boolean isAllowed(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            return false;
+        }
+        
         try {
             String robotsUrl = getRobotsTxtUrl(url);
             RobotsTxtRules rules = getRobotsTxtRules(robotsUrl);
             return rules.isAllowed(url, userAgent);
         } catch (Exception e) {
             logger.warn("Error checking robots.txt for {}: {}", url, e.getMessage());
-            // If we can't check robots.txt, be conservative and allow
             return true;
         }
     }
     
-    /**
-     * Get the delay required between requests for a domain
-     */
     public int getCrawlDelay(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            return 0;
+        }
+        
         try {
             String robotsUrl = getRobotsTxtUrl(url);
             RobotsTxtRules rules = getRobotsTxtRules(robotsUrl);
             return rules.getCrawlDelay(userAgent);
         } catch (Exception e) {
             logger.warn("Error getting crawl delay for {}: {}", url, e.getMessage());
-            return 0; // No delay if we can't determine
+            return 0;
         }
     }
     
-    /**
-     * Get the robots.txt URL for a given page URL
-     */
     private String getRobotsTxtUrl(String pageUrl) throws Exception {
         URI uri = new URI(pageUrl);
         return uri.getScheme() + "://" + uri.getHost() + "/robots.txt";
     }
     
-    /**
-     * Fetch and parse robots.txt rules, with caching
-     */
     private RobotsTxtRules getRobotsTxtRules(String robotsUrl) throws IOException {
         return robotsCache.computeIfAbsent(robotsUrl, url -> {
             try {
                 return fetchAndParseRobotsTxt(url);
             } catch (IOException e) {
                 logger.warn("Failed to fetch robots.txt from {}: {}", url, e.getMessage());
-                return new RobotsTxtRules(); // Return permissive rules on failure
+                return new RobotsTxtRules();
             }
         });
     }
     
-    /**
-     * Fetch and parse robots.txt content
-     */
     private RobotsTxtRules fetchAndParseRobotsTxt(String robotsUrl) throws IOException {
         RobotsTxtRules rules = new RobotsTxtRules();
         
@@ -101,44 +100,36 @@ public class RobotsTxtParser {
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
                 
-                // Skip comments and empty lines
                 if (line.isEmpty() || line.startsWith("#")) {
                     continue;
                 }
                 
-                // Parse User-agent directive
                 if (line.toLowerCase().startsWith("user-agent:")) {
-                    // Save previous group if exists
                     if (currentUserAgent != null) {
                         rules.addRules(currentUserAgent, currentDisallows, currentAllows, currentCrawlDelay);
                     }
                     
-                    // Start new group
                     currentUserAgent = line.substring(11).trim();
                     currentDisallows.clear();
                     currentAllows.clear();
                     currentCrawlDelay = 0;
                     
-                    // Handle wildcard user agent
                     if (currentUserAgent.equals("*")) {
                         currentUserAgent = "*";
                     }
                 }
-                // Parse Disallow directive
                 else if (line.toLowerCase().startsWith("disallow:")) {
                     String path = line.substring(9).trim();
                     if (!path.isEmpty()) {
                         currentDisallows.add(Pattern.compile(convertToRegex(path)));
                     }
                 }
-                // Parse Allow directive
                 else if (line.toLowerCase().startsWith("allow:")) {
                     String path = line.substring(6).trim();
                     if (!path.isEmpty()) {
                         currentAllows.add(Pattern.compile(convertToRegex(path)));
                     }
                 }
-                // Parse Crawl-delay directive
                 else if (line.toLowerCase().startsWith("crawl-delay:")) {
                     try {
                         currentCrawlDelay = Integer.parseInt(line.substring(12).trim());
@@ -148,7 +139,6 @@ public class RobotsTxtParser {
                 }
             }
             
-            // Save last group
             if (currentUserAgent != null) {
                 rules.addRules(currentUserAgent, currentDisallows, currentAllows, currentCrawlDelay);
             }
@@ -157,20 +147,15 @@ public class RobotsTxtParser {
         return rules;
     }
     
-    /**
-     * Convert robots.txt path pattern to regex pattern
-     */
     private String convertToRegex(String path) {
         if (path.isEmpty()) {
-            return ".*"; // Empty disallow means allow all
+            return ".*";
         }
         
-        // Escape regex special characters and convert wildcards
         String regex = path.replaceAll("([\\\\\\.\\[\\]\\{\\}\\(\\)\\+\\?\\^\\$\\|])", "\\\\$1");
         regex = regex.replaceAll("\\*", ".*");
         regex = regex.replaceAll("\\?", "\\.");
         
-        // Ensure it matches from the beginning of the path
         if (!regex.startsWith(".*")) {
             regex = "^" + regex;
         }
@@ -178,9 +163,6 @@ public class RobotsTxtParser {
         return regex;
     }
     
-    /**
-     * Inner class to hold robots.txt rules for a specific user agent
-     */
     private static class RobotsTxtRules {
         private final ConcurrentHashMap<String, UserAgentRules> userAgentRules = new ConcurrentHashMap<>();
         
@@ -189,30 +171,25 @@ public class RobotsTxtParser {
         }
         
         public boolean isAllowed(String url, String userAgent) {
-            // Check specific user agent first
             UserAgentRules specificRules = userAgentRules.get(userAgent);
             if (specificRules != null && specificRules.isAllowed(url)) {
                 return true;
             }
             
-            // Check wildcard rules
             UserAgentRules wildcardRules = userAgentRules.get("*");
             if (wildcardRules != null) {
                 return wildcardRules.isAllowed(url);
             }
             
-            // Default: allow if no rules found
             return true;
         }
         
         public int getCrawlDelay(String userAgent) {
-            // Check specific user agent first
             UserAgentRules specificRules = userAgentRules.get(userAgent);
             if (specificRules != null && specificRules.crawlDelay > 0) {
                 return specificRules.crawlDelay;
             }
             
-            // Check wildcard rules
             UserAgentRules wildcardRules = userAgentRules.get("*");
             if (wildcardRules != null) {
                 return wildcardRules.crawlDelay;
@@ -235,21 +212,18 @@ public class RobotsTxtParser {
             public boolean isAllowed(String url) {
                 String path = extractPath(url);
                 
-                // Check allow patterns first (more specific)
                 for (Pattern allow : allows) {
                     if (allow.matcher(path).matches()) {
                         return true;
                     }
                 }
                 
-                // Check disallow patterns
                 for (Pattern disallow : disallows) {
                     if (disallow.matcher(path).matches()) {
                         return false;
                     }
                 }
                 
-                // Default: allow if no patterns match
                 return true;
             }
             

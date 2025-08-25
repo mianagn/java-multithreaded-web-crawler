@@ -14,62 +14,45 @@ public class HttpResponseHandler {
     private final int baseDelay;
     
     public HttpResponseHandler(int maxRetries, int baseDelay) {
+        if (maxRetries < 0) {
+            throw new IllegalArgumentException("Max retries cannot be negative");
+        }
+        if (baseDelay < 0) {
+            throw new IllegalArgumentException("Base delay cannot be negative");
+        }
+        
         this.maxRetries = maxRetries;
         this.baseDelay = baseDelay;
     }
     
-    /**
-     * Check if a response indicates success
-     */
     public boolean isSuccess(int statusCode) {
         return statusCode >= 200 && statusCode < 300;
     }
     
-    /**
-     * Check if a response indicates a redirect
-     */
     public boolean isRedirect(int statusCode) {
         return statusCode >= 300 && statusCode < 400;
     }
     
-    /**
-     * Check if a response indicates a client error
-     */
     public boolean isClientError(int statusCode) {
         return statusCode >= 400 && statusCode < 500;
     }
     
-    /**
-     * Check if a response indicates a server error
-     */
     public boolean isServerError(int statusCode) {
         return statusCode >= 500 && statusCode < 600;
     }
     
-    /**
-     * Check if a response indicates rate limiting
-     */
     public boolean isRateLimited(int statusCode) {
         return statusCode == 429 || statusCode == 503;
     }
     
-    /**
-     * Check if a response indicates forbidden access
-     */
     public boolean isForbidden(int statusCode) {
         return statusCode == 403;
     }
     
-    /**
-     * Check if a response indicates not found
-     */
     public boolean isNotFound(int statusCode) {
         return statusCode == 404;
     }
     
-    /**
-     * Get a human-readable description of the status code
-     */
     public String getStatusDescription(int statusCode) {
         switch (statusCode) {
             case 200: return "OK";
@@ -94,9 +77,6 @@ public class HttpResponseHandler {
         }
     }
     
-    /**
-     * Check if content type is crawlable
-     */
     public boolean isCrawlableContentType(String contentType) {
         if (contentType == null) {
             return false;
@@ -104,22 +84,18 @@ public class HttpResponseHandler {
         
         String lowerType = contentType.toLowerCase();
         
-        // HTML content types
         if (lowerType.contains("text/html") || lowerType.contains("application/xhtml+xml")) {
             return true;
         }
         
-        // XML content types
         if (lowerType.contains("text/xml") || lowerType.contains("application/xml")) {
             return true;
         }
         
-        // Plain text
         if (lowerType.contains("text/plain")) {
             return true;
         }
         
-        // JSON (for API responses)
         if (lowerType.contains("application/json")) {
             return true;
         }
@@ -127,87 +103,69 @@ public class HttpResponseHandler {
         return false;
     }
     
-    /**
-     * Check if we should retry based on status code and current retry count
-     */
     public boolean shouldRetry(int statusCode, String url) {
-        // Don't retry on client errors (4xx) except rate limiting
+        if (url == null) {
+            return false;
+        }
+        
         if (isClientError(statusCode) && !isRateLimited(statusCode)) {
             return false;
         }
         
-        // Don't retry if we've exceeded max retries
         AtomicInteger retryCount = retryCounts.get(url);
         if (retryCount != null && retryCount.get() >= maxRetries) {
             return false;
         }
         
-        // Retry on server errors (5xx) and rate limiting (429, 503)
         return isServerError(statusCode) || isRateLimited(statusCode);
     }
     
-    /**
-     * Calculate delay for retry with exponential backoff
-     */
     public long calculateRetryDelay(String url) {
+        if (url == null) {
+            return baseDelay;
+        }
+        
         AtomicInteger retryCount = retryCounts.computeIfAbsent(url, k -> new AtomicInteger(0));
         int currentRetries = retryCount.get();
         
-        // Exponential backoff: baseDelay * 2^retryCount
         long delay = baseDelay * (long) Math.pow(2, currentRetries);
-        
-        // Cap at 5 minutes
         delay = Math.min(delay, 300000);
-        
-        // Add some jitter to prevent thundering herd
         delay += (long) (Math.random() * 1000);
         
         return delay;
     }
     
-    /**
-     * Increment retry count for a URL
-     */
     public void incrementRetryCount(String url) {
-        retryCounts.computeIfAbsent(url, k -> new AtomicInteger(0)).incrementAndGet();
+        if (url != null) {
+            retryCounts.computeIfAbsent(url, k -> new AtomicInteger(0)).incrementAndGet();
+        }
     }
     
-    /**
-     * Reset retry count for a URL (on successful request)
-     */
     public void resetRetryCount(String url) {
-        retryCounts.remove(url);
+        if (url != null) {
+            retryCounts.remove(url);
+        }
     }
     
-    /**
-     * Get current retry count for a URL
-     */
     public int getRetryCount(String url) {
+        if (url == null) {
+            return 0;
+        }
+        
         AtomicInteger retryCount = retryCounts.get(url);
         return retryCount != null ? retryCount.get() : 0;
     }
     
-    /**
-     * Clean up retry counts for URLs that have exceeded max retries
-     * This prevents memory leaks in the retry counts map
-     */
     public void cleanupRetryCounts() {
         retryCounts.entrySet().removeIf(entry -> 
             entry.getValue().get() >= maxRetries);
     }
     
-    /**
-     * Get the size of the retry counts map for monitoring
-     */
     public int getRetryCountsSize() {
         return retryCounts.size();
     }
     
-    /**
-     * Check if URL should be followed (not a redirect loop)
-     */
     public boolean shouldFollowRedirect(String url, int redirectCount) {
-        // Prevent redirect loops
         if (redirectCount > 5) {
             logger.warn("Too many redirects for {}, stopping", url);
             return false;
@@ -216,18 +174,15 @@ public class HttpResponseHandler {
         return true;
     }
     
-    /**
-     * Get recommended delay based on status code
-     */
     public long getRecommendedDelay(int statusCode) {
         if (isRateLimited(statusCode)) {
-            return 60000; // 1 minute for rate limiting
+            return 60000;
         }
         
         if (isServerError(statusCode)) {
-            return 10000; // 10 seconds for server errors
+            return 10000;
         }
         
-        return 0; // No additional delay needed
+        return 0;
     }
 }

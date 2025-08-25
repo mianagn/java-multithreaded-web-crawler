@@ -21,28 +21,32 @@ public class WebCrawler {
     private final ConcurrentHashMap<String, Boolean> seenUrls;
     private ExecutorService executorService;
     private final AtomicInteger pagesCrawled;
-    private final AtomicInteger currentDepth;
     
     private volatile boolean isRunning = false;
     private volatile boolean isPaused = false;
 
     public WebCrawler(CrawlerConfig config) {
+        if (config == null) {
+            throw new IllegalArgumentException("Configuration cannot be null");
+        }
         this.config = config;
         this.urlQueue = new LinkedBlockingQueue<>();
         this.crawledPages = new ConcurrentHashMap<>();
         this.seenUrls = new ConcurrentHashMap<>();
         this.executorService = Executors.newFixedThreadPool(config.getThreadCount());
         this.pagesCrawled = new AtomicInteger(0);
-        this.currentDepth = new AtomicInteger(0);
     }
 
     public void startCrawling(String startUrl) {
+        if (startUrl == null || startUrl.trim().isEmpty()) {
+            throw new IllegalArgumentException("Start URL cannot be null or empty");
+        }
+        
         if (isRunning) {
             logger.warn("Crawler is already running");
             return;
         }
 
-        // Check if executor service is terminated and recreate if necessary
         if (executorService.isTerminated() || executorService.isShutdown()) {
             logger.info("Previous crawling session completed. Recreating executor service for new session.");
             recreateExecutorService();
@@ -55,12 +59,9 @@ public class WebCrawler {
         isPaused = false;
         
         pagesCrawled.set(0);
-        currentDepth.set(0);
         crawledPages.clear();
         seenUrls.clear();
         urlQueue.clear();
-        
-        updateCurrentDepth(0);
         
         addUrlToQueue(startUrl, 0);
         
@@ -136,18 +137,18 @@ public class WebCrawler {
     }
 
     private void recreateExecutorService() {
-        // Create a new executor service with the current thread count
-        // This allows the crawler to be reused for multiple sessions
         if (executorService != null && !executorService.isTerminated()) {
             executorService.shutdownNow();
             try {
-                executorService.awaitTermination(1, TimeUnit.SECONDS);
+                if (!executorService.awaitTermination(1, TimeUnit.SECONDS)) {
+                    logger.warn("Executor service did not terminate within timeout");
+                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                logger.warn("Interrupted while waiting for executor shutdown");
             }
         }
         
-        // Create new executor service
         this.executorService = Executors.newFixedThreadPool(config.getThreadCount());
         logger.info("Created new executor service with {} threads", config.getThreadCount());
     }
@@ -192,7 +193,6 @@ public class WebCrawler {
     public CrawlingStats getStats() {
         return new CrawlingStats(
             pagesCrawled.get(),
-            currentDepth.get(),
             urlQueue.size(),
             seenUrls.size(),
             isRunning,
@@ -209,10 +209,6 @@ public class WebCrawler {
     }
 
     public boolean canStart() {
-        // Can start if not currently running AND either:
-        // 1. Executor service is null (first time)
-        // 2. Executor service is terminated/shutdown (previous session completed)
-        // 3. Executor service is running but no active tasks (ready for new session)
         if (isRunning) {
             return false;
         }
@@ -225,7 +221,6 @@ public class WebCrawler {
             return true;
         }
         
-        // If executor service is running but no active tasks, we can start
         if (executorService instanceof ThreadPoolExecutor) {
             ThreadPoolExecutor tpe = (ThreadPoolExecutor) executorService;
             return tpe.getActiveCount() == 0;
@@ -300,26 +295,17 @@ public class WebCrawler {
             logger.warn("Error during cleanup: {}", e.getMessage());
         }
     }
-    
-    private void updateCurrentDepth(int newDepth) {
-        int current = currentDepth.get();
-        while (newDepth > current && !currentDepth.compareAndSet(current, newDepth)) {
-            current = currentDepth.get();
-        }
-    }
 
     public static class CrawlingStats {
         private final int pagesCrawled;
-        private final int currentDepth;
         private final int queueSize;
         private final int totalUrlsSeen;
         private final boolean isRunning;
         private final boolean isPaused;
 
-        public CrawlingStats(int pagesCrawled, int currentDepth, int queueSize, 
+        public CrawlingStats(int pagesCrawled, int queueSize, 
                            int totalUrlsSeen, boolean isRunning, boolean isPaused) {
             this.pagesCrawled = pagesCrawled;
-            this.currentDepth = currentDepth;
             this.queueSize = queueSize;
             this.totalUrlsSeen = totalUrlsSeen;
             this.isRunning = isRunning;
@@ -327,7 +313,6 @@ public class WebCrawler {
         }
 
         public int getPagesCrawled() { return pagesCrawled; }
-        public int getCurrentDepth() { return currentDepth; }
         public int getQueueSize() { return queueSize; }
         public int getTotalUrlsSeen() { return totalUrlsSeen; }
         public boolean isRunning() { return isRunning; }
@@ -337,7 +322,6 @@ public class WebCrawler {
         public String toString() {
             return "CrawlingStats{" +
                     "pagesCrawled=" + pagesCrawled +
-                    ", currentDepth=" + currentDepth +
                     ", queueSize=" + queueSize +
                     ", totalUrlsSeen=" + totalUrlsSeen +
                     ", isRunning=" + isRunning +

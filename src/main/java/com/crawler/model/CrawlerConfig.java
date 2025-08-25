@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 public class CrawlerConfig {
     private static final Logger logger = LoggerFactory.getLogger(CrawlerConfig.class);
+    
     private int threadCount;
     private int maxDepth;
     private int maxPages;
@@ -46,6 +47,10 @@ public class CrawlerConfig {
     }
 
     public void setThreadCount(int threadCount) {
+        if (threadCount <= 0) {
+            throw new IllegalArgumentException("Thread count must be positive");
+        }
+        
         int availableProcessors = Runtime.getRuntime().availableProcessors();
         int maxThreads = Math.min(availableProcessors * 2, 32);
         int minThreads = Math.max(1, availableProcessors / 2);
@@ -64,7 +69,10 @@ public class CrawlerConfig {
     }
 
     public void setMaxDepth(int maxDepth) {
-        this.maxDepth = Math.max(1, maxDepth);
+        if (maxDepth <= 0) {
+            throw new IllegalArgumentException("Max depth must be positive");
+        }
+        this.maxDepth = maxDepth;
     }
 
     public int getMaxPages() {
@@ -72,7 +80,10 @@ public class CrawlerConfig {
     }
 
     public void setMaxPages(int maxPages) {
-        this.maxPages = Math.max(1, maxPages);
+        if (maxPages <= 0) {
+            throw new IllegalArgumentException("Max pages must be positive");
+        }
+        this.maxPages = maxPages;
     }
 
     public long getDelayBetweenRequests() {
@@ -80,7 +91,10 @@ public class CrawlerConfig {
     }
 
     public void setDelayBetweenRequests(long delayBetweenRequests) {
-        this.delayBetweenRequests = Math.max(0, delayBetweenRequests);
+        if (delayBetweenRequests < 0) {
+            throw new IllegalArgumentException("Delay between requests cannot be negative");
+        }
+        this.delayBetweenRequests = delayBetweenRequests;
     }
 
     public int getConnectionTimeout() {
@@ -88,7 +102,10 @@ public class CrawlerConfig {
     }
 
     public void setConnectionTimeout(int connectionTimeout) {
-        this.connectionTimeout = Math.max(1000, connectionTimeout);
+        if (connectionTimeout < 1000) {
+            throw new IllegalArgumentException("Connection timeout must be at least 1000ms");
+        }
+        this.connectionTimeout = connectionTimeout;
     }
 
     public String getUserAgent() {
@@ -96,6 +113,9 @@ public class CrawlerConfig {
     }
 
     public void setUserAgent(String userAgent) {
+        if (userAgent == null || userAgent.trim().isEmpty()) {
+            throw new IllegalArgumentException("User agent cannot be null or empty");
+        }
         this.userAgent = userAgent;
     }
 
@@ -120,7 +140,10 @@ public class CrawlerConfig {
     }
 
     public void setMaxQueueSize(int maxQueueSize) {
-        this.maxQueueSize = Math.max(50, maxQueueSize);
+        if (maxQueueSize < 50) {
+            throw new IllegalArgumentException("Max queue size must be at least 50");
+        }
+        this.maxQueueSize = maxQueueSize;
     }
 
     public boolean isFilterNonContent() {
@@ -136,7 +159,10 @@ public class CrawlerConfig {
     }
 
     public void setMaxLinksPerPage(int maxLinksPerPage) {
-        this.maxLinksPerPage = Math.max(1, maxLinksPerPage);
+        if (maxLinksPerPage <= 0) {
+            throw new IllegalArgumentException("Max links per page must be positive");
+        }
+        this.maxLinksPerPage = maxLinksPerPage;
     }
 
     public int getMaxRetries() {
@@ -144,7 +170,10 @@ public class CrawlerConfig {
     }
 
     public void setMaxRetries(int maxRetries) {
-        this.maxRetries = Math.max(0, maxRetries);
+        if (maxRetries < 0) {
+            throw new IllegalArgumentException("Max retries cannot be negative");
+        }
+        this.maxRetries = maxRetries;
     }
 
     public int getRetryBaseDelay() {
@@ -152,7 +181,10 @@ public class CrawlerConfig {
     }
 
     public void setRetryBaseDelay(int retryBaseDelay) {
-        this.retryBaseDelay = Math.max(100, retryBaseDelay);
+        if (retryBaseDelay < 100) {
+            throw new IllegalArgumentException("Retry base delay must be at least 100ms");
+        }
+        this.retryBaseDelay = retryBaseDelay;
     }
 
     public int getMaxRedirects() {
@@ -160,7 +192,10 @@ public class CrawlerConfig {
     }
 
     public void setMaxRedirects(int maxRedirects) {
-        this.maxRedirects = Math.max(1, Math.min(maxRedirects, 10));
+        if (maxRedirects < 1 || maxRedirects > 10) {
+            throw new IllegalArgumentException("Max redirects must be between 1 and 10");
+        }
+        this.maxRedirects = maxRedirects;
     }
 
     public boolean isValidContentType() {
@@ -176,7 +211,10 @@ public class CrawlerConfig {
     }
 
     public void setRobotsTxtTimeout(int robotsTxtTimeout) {
-        this.robotsTxtTimeout = Math.max(1000, robotsTxtTimeout);
+        if (robotsTxtTimeout < 1000) {
+            throw new IllegalArgumentException("Robots.txt timeout must be at least 1000ms");
+        }
+        this.robotsTxtTimeout = robotsTxtTimeout;
     }
 
     @Override

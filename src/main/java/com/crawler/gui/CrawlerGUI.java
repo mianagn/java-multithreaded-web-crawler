@@ -45,6 +45,7 @@ public class CrawlerGUI extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1200, 800);
         setLocationRelativeTo(null);
+        
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             
@@ -54,6 +55,7 @@ public class CrawlerGUI extends JFrame {
             UIManager.put("Button.select", new Color(46, 204, 113));
             
         } catch (Exception e) {
+            // Use default look and feel if system look fails
         }
         
         JPanel mainPanel = new JPanel(new BorderLayout(15, 15));
@@ -87,14 +89,13 @@ public class CrawlerGUI extends JFrame {
         ));
         panel.setBackground(Color.WHITE);
         
-        // URL input panel
         JPanel urlPanel = new JPanel(new BorderLayout(10, 0));
         JLabel urlLabel = new JLabel("Start URL:");
         urlLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
         urlLabel.setForeground(new Color(52, 73, 94));
         urlPanel.add(urlLabel, BorderLayout.WEST);
         
-        urlField = new JTextField("https://promotelio.gr");
+        urlField = new JTextField("https://example.com");
         urlField.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         urlField.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(189, 195, 199), 1),
@@ -119,7 +120,6 @@ public class CrawlerGUI extends JFrame {
         buttonPanel.add(pauseButton);
         buttonPanel.add(resumeButton);
         
-        // Set initial button states
         updateButtonStates();
         
         JPanel configPanel = createConfigPanel();
@@ -146,7 +146,6 @@ public class CrawlerGUI extends JFrame {
         ));
         panel.setBackground(new Color(245, 247, 250));
         
-        // Thread count
         JLabel threadLabel = new JLabel("Threads:");
         threadLabel.setFont(new Font("Segoe UI", Font.BOLD, 11));
         threadLabel.setForeground(new Color(52, 73, 94));
@@ -252,7 +251,7 @@ public class CrawlerGUI extends JFrame {
         statusLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
         statusLabel.setForeground(new Color(52, 73, 94));
         
-        statsLabel = new JLabel("Pages: 0 | Depth: 0 | Queue: 0");
+        statsLabel = new JLabel("Pages: 0 | Queue: 0 | Total URLs: 0");
         statsLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         statsLabel.setForeground(new Color(52, 73, 94));
         
@@ -349,24 +348,23 @@ public class CrawlerGUI extends JFrame {
         WebCrawler.CrawlingStats stats = crawler.getStats();
         
         SwingUtilities.invokeLater(() -> {
-                    // Update status label
-        if (stats.isRunning()) {
-            if (stats.isPaused()) {
-                statusLabel.setText("PAUSED");
-                statusLabel.setForeground(new Color(241, 196, 15));
+            if (stats.isRunning()) {
+                if (stats.isPaused()) {
+                    statusLabel.setText("PAUSED");
+                    statusLabel.setForeground(new Color(241, 196, 15));
+                } else {
+                    statusLabel.setText("RUNNING");
+                    statusLabel.setForeground(new Color(46, 204, 113));
+                }
             } else {
-                statusLabel.setText("RUNNING");
-                statusLabel.setForeground(new Color(46, 204, 113));
+                statusLabel.setText("STOPPED");
+                statusLabel.setForeground(new Color(231, 76, 60));
             }
-        } else {
-            statusLabel.setText("STOPPED");
-            statusLabel.setForeground(new Color(231, 76, 60));
-        }
-        
-        statsLabel.setText(String.format("Pages: %d | Depth: %d | Queue: %d | Total URLs: %d", 
-            stats.getPagesCrawled(), stats.getCurrentDepth(), stats.getQueueSize(), stats.getTotalUrlsSeen()));
             
-        updateButtonStates();
+            statsLabel.setText(String.format("Pages: %d | Queue: %d | Total URLs: %d", 
+                stats.getPagesCrawled(), stats.getQueueSize(), stats.getTotalUrlsSeen()));
+                
+            updateButtonStates();
         });
     }
     

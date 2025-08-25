@@ -10,14 +10,12 @@ public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) {
-        System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "INFO");
-        System.setProperty("org.slf4j.simpleLogger.showDateTime", "true");
-        System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", "HH:mm:ss");
+        setupLogging();
         
         logger.info("Starting Java Multithreaded Web Crawler Application");
         
         try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            setupLookAndFeel();
         } catch (Exception e) {
             logger.warn("Could not set system look and feel: {}", e.getMessage());
         }
@@ -29,16 +27,40 @@ public class Main {
                 logger.info("GUI launched successfully");
             } catch (Exception e) {
                 logger.error("Failed to launch GUI: {}", e.getMessage(), e);
-                JOptionPane.showMessageDialog(null, 
-                    "Failed to launch application: " + e.getMessage(),
-                    "Error", 
-                    JOptionPane.ERROR_MESSAGE);
+                showErrorDialog("Failed to launch application: " + e.getMessage());
                 System.exit(1);
             }
         });
         
+        setupShutdownHook();
+    }
+    
+    private static void setupLogging() {
+        System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "INFO");
+        System.setProperty("org.slf4j.simpleLogger.showDateTime", "true");
+        System.setProperty("org.slf4j.simpleLogger.dateTimeFormat", "HH:mm:ss");
+    }
+    
+    private static void setupLookAndFeel() throws Exception {
+        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+    }
+    
+    private static void setupShutdownHook() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             logger.info("Application shutting down");
         }));
+    }
+    
+    private static void showErrorDialog(String message) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            // Use default look and feel if system look fails
+        }
+        
+        JOptionPane.showMessageDialog(null, 
+            message,
+            "Error", 
+            JOptionPane.ERROR_MESSAGE);
     }
 }
